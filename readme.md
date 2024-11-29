@@ -15,10 +15,10 @@ https://creativecommons.org/publicdomain/zero/1.0/
 
 *** 
 
-__read_wb_skins__ - Display summary of Windowblinds skins authors/filenames
+__read_wb_skins__ - Display summary of Windowblinds skins authors/filenames  
 __read_wb_skins__ will display scan all installed Windowblinds skins on a machine,
 and display author names sorted by number of skins from each author.
-It optionally will also display the skin names for each author.
+It optionally will also display the skin names for each author.  
 Last Update: __November 25, 2024__
 
 ``` 
