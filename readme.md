@@ -65,5 +65,34 @@ Last Update: __February 10, 2023__
 __fund_history__ - do some computations on Fidelity Purchase History page
 Last Update: __December 12, 2024__
 
-
-
+```
+seek FFRHX in Portfolio Positions.htm
+Found FFRHX
+Line 2136, length: 28254: Found [Acquired]
+found start of data table
+ready to start scanning data elements
+data row: 1
+   0: Nov-29-2024</td
+   1: Short</td
+   2: -$1.71</td
+   3: -0.41%</td
+   4: $417.15</td
+   5: 44.663</td
+   6: $9.38</td
+   7: $418.86</td
+[...]
+data row: 35
+   0: Apr-21-2022</td
+   1: Long</td
+   2: -$223.63</td
+   3: -0.41%</td
+   4: $54,803.59</td
+   5: 5,867.622</td
+   6: $9.38</td
+   7: $55,027.22</td
+data row: 36
+data rows: 36, end of table found
+max line length: 795642 chars
+Current value:    66859.32
+Cost basis total: 67132.14
+```
