@@ -62,3 +62,8 @@ source: [C:\Users\Public\Documents\Stardock\WindowBlinds\skins.nbd]
 __fidelity.calcs__ - Calculate periodic interest earned on my Fidelity fixed annuities.  
 Last Update: __February 10, 2023__
 
+__fund_history__ - do some computations on Fidelity Purchase History page
+Last Update: __December 12, 2024__
+
+
+
