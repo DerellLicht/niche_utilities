@@ -64,7 +64,7 @@ Last Update: __February 10, 2023__
 
 *** 
 
-__fund_history__ - do some computations on Fidelity Purchase History page
+__fund_history__ - do some computations on Fidelity Purchase History page  
 Last Update: __December 12, 2024__
 
 ```
