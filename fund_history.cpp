@@ -1,16 +1,19 @@
-//*********************************************************************************
+//**********************************************************************************************
 //  fund_history - do some computations on Fidelity Purchase History page
+//  
 //  build: g++ -Wall -O2 fund_history.cpp -o fund_history.exe
 //  test run: fund_history -fFFRHX "Portfolio Positions.htm"
-//*********************************************************************************
+//**********************************************************************************************
+//  reference documents:
+//  Portfolio Positions.htm - saved page from Fidelity:FFRHX fund
+//  PortfolioTable.html - extract from Portfolio Positions.htm, Line 2136, length: 28254,
+//     which contains the entire data table that I need to parse.
+//**********************************************************************************************
 #include <windows.h>
 #include <stdio.h>
 #ifdef _lint
 #include <stdlib.h>
 #endif
-#include <io.h>
-// #include <fcntl.h>
-// #include <sys/types.h>
 
 typedef  unsigned int  uint ;
 
