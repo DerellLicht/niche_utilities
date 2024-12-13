@@ -28,6 +28,9 @@ static char fund_data[MAX_PATH+1] = "" ;
 #define  FUND_NAME_LEN  5
 static char fund_code[FUND_NAME_LEN+1] = "";
 
+static double row4sum = 0.0 ;
+static double row7sum = 0.0 ;
+
 //****************************************************************************
 void usage(void)
 {
@@ -136,13 +139,10 @@ static double convert_to_double(char *td)
 }
 
 //****************************************************************************
-//  Acquired has been Acquired...
+//  "Acquired" has been Acquired...
 //  All required data is in the string that is passed to this function.
 //  Now, find the required elements and process them.
 //****************************************************************************
-static double row4sum = 0.0 ;
-static double row7sum = 0.0 ;
-
 static int parse_fund_data(char *inpstr)
 {
    char *srch = NULL;
@@ -151,7 +151,10 @@ static int parse_fund_data(char *inpstr)
    row7sum = 0.0 ;
    uint data_column = 0 ;
    
-   bool outer_done = false ;  //  parse entire table
+   //******************************************************
+   //  parse entire table
+   //******************************************************
+   bool outer_done = false ;  
    while (!outer_done) {
       switch (parse_state) {
       case PSF_FOUND_ACQUIRED:
@@ -177,19 +180,19 @@ static int parse_fund_data(char *inpstr)
 // <td class="pvd-table__data-cell pvd-table__data-cell--right">$446.24</td>
 // </tr>
 
-#define  DEBUG_OUTPUT
       case PSF_SCAN_DATA:
          {  //  begin local context
          printf("ready to start scanning data elements\n");
          uint data_rows = 0 ;
          char *tr = srch ;
+
+         //*********************************************************         
          //  iterate over line with all table data in it
+         //*********************************************************         
          bool done = false ;
          while (!done) {   //  parse table data
             data_rows++ ;
-#ifdef  DEBUG_OUTPUT
             printf("data row: %u\n", data_rows);
-#endif
             data_column = 0 ;
             //  seek to <tr> tag for next row
             tr = seek_next_tr_tag(tr);
@@ -251,6 +254,18 @@ static int parse_fund_data(char *inpstr)
                }
                tdcl += 4 ; //  skip past TD close tag
                *tdcl = 0 ;
+
+               //  show extracted value               
+               // data row: 35
+               //    0: Apr-21-2022</td
+               //    1: Long</td
+               //    2: -$223.63</td
+               //    3: -0.41%</td
+               //    4: $54,803.59</td
+               //    5: 5,867.622</td
+               //    6: $9.38</td
+               //    7: $55,027.22</td
+               
                printf("   %u: %s\n", data_column, td);
                switch (data_column) {
                case 4:
