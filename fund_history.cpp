@@ -252,19 +252,18 @@ static int parse_fund_data(char *inpstr)
                   outer_done = true ;
                   continue ;
                }
-               tdcl += 4 ; //  skip past TD close tag
                *tdcl = 0 ;
 
                //  show extracted value               
                // data row: 35
-               //    0: Apr-21-2022</td
-               //    1: Long</td
-               //    2: -$223.63</td
-               //    3: -0.41%</td
-               //    4: $54,803.59</td
-               //    5: 5,867.622</td
-               //    6: $9.38</td
-               //    7: $55,027.22</td
+               //   0: Apr-21-2022
+               //   1: Long
+               //   2: -$223.63
+               //   3: -0.41%
+               //   4: $54,803.59
+               //   5: 5,867.622
+               //   6: $9.38
+               //   7: $55,027.22
                
                printf("   %u: %s\n", data_column, td);
                switch (data_column) {
@@ -278,7 +277,7 @@ static int parse_fund_data(char *inpstr)
                default:
                   break ;
                }
-               *tdcl = '>' ;  //  restore TD close tag
+               *tdcl = '<' ;  //  restore TD close tag
                data_column++ ;
             }  //  end !data_srch_done
             
@@ -375,8 +374,9 @@ int main(int argc, char** argv)
       printf("%s: %s\n", fund_data, strerror(errno));
       return errno;
    }
-   
-//  the longest line that I saw in my first reference html file, was 15,999 bytes   
+
+//  longest line in file was 795,642 chars   
+//  The line with our target table data, was Line 2136, length: 28254 chars
 #define  MAX_LINE_LEN   (1024*1024)
 #define  MAX_SAFE_LEN   (MAX_LINE_LEN - 2000)
    char inpstr[MAX_LINE_LEN+1];
@@ -385,6 +385,9 @@ int main(int argc, char** argv)
    uint max_line_len = 0 ;
    while (fgets(inpstr, MAX_LINE_LEN, infd) != NULL) {
       lcount++ ;
+      //  the purpose of this test, is to ensure that we don't read a partial text line.
+      //  I would rather just have enough space for the longest line in the file,
+      //  and not bother with partial-line merging.
       uint slen = strlen(inpstr);
       if (slen > MAX_SAFE_LEN) {
          printf("line %u: excessive line length [%u]\n", lcount, slen);
