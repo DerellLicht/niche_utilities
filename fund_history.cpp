@@ -15,10 +15,10 @@
 #include <stdlib.h>
 #endif
 
-typedef unsigned char         u8 ;
-typedef unsigned short        u16 ;
+// typedef unsigned char         u8 ;
+// typedef unsigned short        u16 ;
+// typedef unsigned long         u32 ;
 typedef unsigned int          uint ;
-typedef unsigned long         u32 ;
 //lint -e10   Expecting '}'
 
 //lint -e641  PSF_SEEK_FUND_CODE, PSF_SEEK_ACQUIRED, PSF_FOUND_ACQUIRED, PSF_SCAN_DATA, PSF_END)
@@ -33,6 +33,7 @@ static char fund_code[FUND_NAME_LEN+1] = "";
 typedef struct fid_fund_info_s {
    fid_fund_info_s *next ;
    uint ymd ;
+   uint year ;
    double current_value ;
    double cost_basis_value ;
 } fid_fund_info_t, *fid_fund_info_p ;
@@ -286,7 +287,6 @@ static double convert_to_double(char *td)
       td++ ;
    }
    double tdbl = strtod(tbuf, NULL);   //lint !e119
-   // printf("      [%.2f]\n", tdbl);
    return tdbl ;
 }
 
@@ -297,7 +297,7 @@ static char const monstr[13][4] = {
    
 static uint extract_month(char *inpstr)
 {
-   int idx;
+   uint idx;
    for (idx=0; monstr[idx][0] != 0; idx++) {
       if (strncmp(monstr[idx], inpstr, 3) == 0) {
          return idx ;
@@ -320,14 +320,14 @@ static uint extract_month(char *inpstr)
 //    0: Feb-29-2024
 //    0: Jan-31-2024
 //****************************************************************************
-static uint extract_date(char *inpstr)
+static void extract_date(char *inpstr, fid_fund_info_p ffi_new)
 {
    uint month = extract_month(inpstr);
    uint date  = (uint) atoi(inpstr+4);
-   uint year  = (uint) atoi(inpstr+7);
-   uint ymd = (year * 10000) + ((month+1) * 100) + date;
+   ffi_new->year  = (uint) atoi(inpstr+7);
+   ffi_new->ymd = (ffi_new->year * 10000) + ((month+1) * 100) + date;
    // printf("   [%04u %02u %02u, %08u]\n", year, month+1, date, (uint) ymd);
-   return ymd ;
+   // return ffi_new->ymd ;
 }
 
 //****************************************************************************
@@ -382,27 +382,19 @@ static int parse_fund_data(char *inpstr)
          //*********************************************************         
          bool done = false ;
          while (!done) {   //  parse table data
+            //  this also counts the terminating row...
             data_rows++ ;
-            printf("data row: %u\n", data_rows);
+            // printf("data row: %u\n", data_rows);
             data_column = 0 ;
 
             //  allocate struct for new data row
             fid_fund_info_p ffi_new = new fid_fund_info_t ;
             ZeroMemory(ffi_new, sizeof(fid_fund_info_t));
             
-            //  attach new element onto linked list
-            if (ffi_top == NULL) {
-               ffi_top = ffi_new ;
-            }
-            else {
-               ffi_tail->next = ffi_new ;
-            }
-            ffi_tail = ffi_new ;
-
             //  seek to <tr> tag for next row
             tr = seek_next_tr_tag(tr);
             if (tr == NULL) {
-               printf("data rows: %u, end of table found\n", data_rows);
+               // printf("data rows: %u, end of table found\n", data_rows);
                parse_state = PSF_SEEK_FUND_CODE ;
                done = true ;
                outer_done = true ;
@@ -469,10 +461,10 @@ static int parse_fund_data(char *inpstr)
                //   6: $9.38             Average Cost Basis
                //   7: $55,027.22        Cost Basis Total
                
-               printf("   %u: %s\n", data_column, td);
+               // printf("   %u: %s\n", data_column, td);
                switch (data_column) {
                case 0:
-                  ffi_new->ymd = extract_date(td);
+                  extract_date(td, ffi_new);
                   break ;
                case 4:
                   ffi_new->current_value = convert_to_double(td) ;
@@ -487,13 +479,24 @@ static int parse_fund_data(char *inpstr)
                   break ;
                }
                *tdcl = '<' ;  //  restore TD close tag
+               
                data_column++ ;
             }  //  end !data_srch_done
-            
             
             *trcl = '<' ;  //  restore row term after parsing data elements
             tr = trcl ;   //  slide tr ptr to next element
             //  now, iterate over <td> tags until </tr> is found
+
+            //*****************************************************            
+            //  attach new element onto linked list
+            //*****************************************************            
+            if (ffi_top == NULL) {
+               ffi_top = ffi_new ;
+            }
+            else {
+               ffi_tail->next = ffi_new ;
+            }
+            ffi_tail = ffi_new ;
          }
          }  //  end local context
          break ;
