@@ -62,6 +62,149 @@ enum {
    PSF_END   
 } ;
 
+//lint -e1013  Symbol 'LowPart' not a member of class '_LARGE_INTEGER'
+//lint -e40    Undeclared identifier 'LowPart'
+//lint -e63    Expected an lvalue
+
+static fid_fund_info_p merge(fid_fund_info_p a, fid_fund_info_p b);
+//************************************************************
+//  the following object is a dummy point structure
+//  which is used by merge_sort.  The main code must
+//  allocate a strucure for this to point to.
+//  
+//  A global function pointer is also required by the
+//  sort routine.  This will point to a function which
+//  accepts two structure pointers as arguments, and
+//  returns:
+//  
+//     >0 if a > b
+//    ==0 if a == b
+//     <0 if a < b
+//  
+//************************************************************
+static fid_fund_info_p z = NULL ;
+static int (*sort_fcn) (fid_fund_info_p a, fid_fund_info_p b) ;
+
+//****************************************************
+//  allocate a dummy structure for merge_sort()
+//****************************************************
+static int init_sort(void) 
+{
+   // z = (fid_fund_info_p ) malloc(sizeof(ffdata)) ;
+   //  new does not return errno on OUT_OF_MEMORY, it just aborts
+   z = (fid_fund_info_p ) new fid_fund_info_t ;
+   // if (z == NULL)
+   //    error_exit(OUT_OF_MEMORY, NULL) ;
+   z->next = NULL ;
+   return 0 ;
+}
+
+//****************************************************
+// void free_file_structs(void)
+//    {
+//    if (z != NULL)  delete z ;
+//    }
+
+//*********************************************************
+static int sort_ymd(fid_fund_info_p a, fid_fund_info_p b)
+{
+   if (a->ymd > b->ymd)  return(1) ;
+   else if (b->ymd > a->ymd)  return(-1) ;
+   else return(0) ;
+}  //lint !e818
+
+//***************************************************************************
+//  This routine recursively splits linked lists into two parts, 
+//  passing the divided lists to merge() to merge the two sorted lists.
+//***************************************************************************
+static fid_fund_info_p merge_sort(fid_fund_info_p c)
+   {
+   fid_fund_info_p a, b, prev ;
+   int pcount = 0 ;
+   int j = 0 ;
+
+   if ((c != NULL) && (c->next != NULL))
+      {
+      a = c ;
+      while (a != NULL)
+         {
+         pcount++ ;
+         a = a->next  ;
+         }
+      a = c ;
+      b = c ;
+      prev = b ;
+      while (j <  pcount/2)
+         {
+         j++ ;
+         prev = b ;
+         b = b->next ;
+         }
+      prev->next = NULL ;  //lint !e771
+
+      return merge(merge_sort(a), merge_sort(b)) ;
+      }
+   return c ;
+   }
+
+//*********************************************************
+//  This routine merges two sorted linked lists.
+//*********************************************************
+static fid_fund_info_p merge(fid_fund_info_p a, fid_fund_info_p b)
+   {
+   fid_fund_info_p c ;
+   c = z ;
+
+   do
+      {
+      int x = sort_fcn(a, b) ;
+      if (x <= 0)
+         {
+         c->next = a ;
+         c = a ;
+         a = a->next ;
+         }
+      else
+         {
+         c->next = b ;
+         c = b ;
+         b = b->next ;  //lint !e613
+         }
+      }
+   while ((a != NULL) && (b != NULL));
+
+   if (a == NULL)  c->next = b ;  //lint !e613
+             else  c->next = a ;  //lint !e613
+   return z->next ;
+   }
+
+//*********************************************************
+//  This intermediate function is used because I want
+//  merge_sort() to accept a passed parameter,
+//  but in this particular application the initial
+//  list is global.  This function sets up the global
+//  comparison-function pointer and passes the global
+//  list pointer to merge_sort().
+//*********************************************************
+static void sort_files(int (*current_sort)(fid_fund_info_p a, fid_fund_info_p b))
+{
+   sort_fcn = current_sort ;
+   ffi_top = merge_sort(ffi_top) ;
+}
+
+//*****************************************************************
+void sort_by_ymd(void)
+{
+   if (z == 0) {
+      init_sort() ;  //lint !e534
+   }
+
+   sort_files(sort_ymd) ;
+}
+
+//lint +e1013  Symbol 'LowPart' not a member of class '_LARGE_INTEGER'
+//lint +e40    Undeclared identifier 'LowPart'
+//lint +e63    Expected an lvalue
 //****************************************************************************
 //  data table header
 // <table class="pvd-table__table posweb-purchase-history" tabindex="0">
@@ -474,6 +617,7 @@ int main(int argc, char** argv)
    fclose(infd);
    
    //  sort list by ymd
+   sort_by_ymd();
    
    //  then iterate over list to build desired totals
    double row4sum = 0.0 ;
@@ -483,10 +627,13 @@ int main(int argc, char** argv)
    // double cost_basis_value ;
    fid_fund_info_p ffi_temp ;
    uint fcount = 0 ;
+   puts("");
    for (ffi_temp = ffi_top; ffi_temp != NULL; ffi_temp = ffi_temp->next) {
       fcount++ ;
       row4sum += ffi_temp->current_value ;
       row7sum += ffi_temp->cost_basis_value ;
+      printf("%03u: %08u: %9.2f  %9.2f\n", 
+         fcount, ffi_temp->ymd, ffi_temp->current_value, ffi_temp->cost_basis_value);
    }
    
    //  output totals
