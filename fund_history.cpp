@@ -15,8 +15,10 @@
 #include <stdlib.h>
 #endif
 
-typedef  unsigned int  uint ;
-
+typedef unsigned char         u8 ;
+typedef unsigned short        u16 ;
+typedef unsigned int          uint ;
+typedef unsigned long         u32 ;
 //lint -e10   Expecting '}'
 
 //lint -e641  PSF_SEEK_FUND_CODE, PSF_SEEK_ACQUIRED, PSF_FOUND_ACQUIRED, PSF_SCAN_DATA, PSF_END)
@@ -28,9 +30,16 @@ static char fund_data[MAX_PATH+1] = "" ;
 #define  FUND_NAME_LEN  5
 static char fund_code[FUND_NAME_LEN+1] = "";
 
-static double row4sum = 0.0 ;
-static double row7sum = 0.0 ;
+typedef struct fid_fund_info_s {
+   fid_fund_info_s *next ;
+   uint ymd ;
+   double current_value ;
+   double cost_basis_value ;
+} fid_fund_info_t, *fid_fund_info_p ;
 
+static fid_fund_info_p ffi_top = NULL ;
+static fid_fund_info_p ffi_tail = NULL ;
+               
 //****************************************************************************
 void usage(void)
 {
@@ -139,6 +148,46 @@ static double convert_to_double(char *td)
 }
 
 //****************************************************************************
+static char const monstr[13][4] = {
+   "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+   "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", ""};
+   
+static uint extract_month(char *inpstr)
+{
+   int idx;
+   for (idx=0; monstr[idx][0] != 0; idx++) {
+      if (strncmp(monstr[idx], inpstr, 3) == 0) {
+         return idx ;
+      }
+   }
+   return idx ;
+}
+
+//****************************************************************************
+//    0: Dec-29-2023
+//    0: Nov-29-2024
+//    0: Oct-31-2024
+//    0: Sep-30-2024
+//    0: Aug-30-2024
+//    0: Jul-31-2024
+//    0: Jun-28-2024
+//    0: May-31-2024
+//    0: Apr-30-2024
+//    0: Mar-28-2024
+//    0: Feb-29-2024
+//    0: Jan-31-2024
+//****************************************************************************
+static uint extract_date(char *inpstr)
+{
+   uint month = extract_month(inpstr);
+   uint date  = (uint) atoi(inpstr+4);
+   uint year  = (uint) atoi(inpstr+7);
+   uint ymd = (year * 10000) + ((month+1) * 100) + date;
+   // printf("   [%04u %02u %02u, %08u]\n", year, month+1, date, (uint) ymd);
+   return ymd ;
+}
+
+//****************************************************************************
 //  "Acquired" has been Acquired...
 //  All required data is in the string that is passed to this function.
 //  Now, find the required elements and process them.
@@ -146,9 +195,9 @@ static double convert_to_double(char *td)
 static int parse_fund_data(char *inpstr)
 {
    char *srch = NULL;
-   
-   row4sum = 0.0 ;
-   row7sum = 0.0 ;
+
+   // row4sum = 0.0 ;
+   // row7sum = 0.0 ;
    uint data_column = 0 ;
    
    //******************************************************
@@ -185,15 +234,28 @@ static int parse_fund_data(char *inpstr)
          printf("ready to start scanning data elements\n");
          uint data_rows = 0 ;
          char *tr = srch ;
-
          //*********************************************************         
-         //  iterate over line with all table data in it
+         //  iterate over table row with all table data in it
          //*********************************************************         
          bool done = false ;
          while (!done) {   //  parse table data
             data_rows++ ;
             printf("data row: %u\n", data_rows);
             data_column = 0 ;
+
+            //  allocate struct for new data row
+            fid_fund_info_p ffi_new = new fid_fund_info_t ;
+            ZeroMemory(ffi_new, sizeof(fid_fund_info_t));
+            
+            //  attach new element onto linked list
+            if (ffi_top == NULL) {
+               ffi_top = ffi_new ;
+            }
+            else {
+               ffi_tail->next = ffi_new ;
+            }
+            ffi_tail = ffi_new ;
+
             //  seek to <tr> tag for next row
             tr = seek_next_tr_tag(tr);
             if (tr == NULL) {
@@ -213,7 +275,6 @@ static int parse_fund_data(char *inpstr)
                continue ;
             }
             *trcl = 0 ; //  NULL-term the row close tag
-            
             
             //*****************************************************
             //  iterate over TD elements in row
@@ -256,22 +317,27 @@ static int parse_fund_data(char *inpstr)
 
                //  show extracted value               
                // data row: 35
-               //   0: Apr-21-2022
-               //   1: Long
-               //   2: -$223.63
-               //   3: -0.41%
-               //   4: $54,803.59
-               //   5: 5,867.622
-               //   6: $9.38
-               //   7: $55,027.22
+               //   0: Apr-21-2022       Acquired date
+               //   1: Long              Term: short/long
+               //   2: -$223.63          Total gain/loss, dollars
+               //   3: -0.41%            Total gain/loss, percent
+               //   4: $54,803.59        Current Value
+               //   5: 5,867.622         Quantity
+               //   6: $9.38             Average Cost Basis
+               //   7: $55,027.22        Cost Basis Total
                
                printf("   %u: %s\n", data_column, td);
                switch (data_column) {
+               case 0:
+                  ffi_new->ymd = extract_date(td);
+                  break ;
                case 4:
-                  row4sum += convert_to_double(td) ;
+                  ffi_new->current_value = convert_to_double(td) ;
+                  // row4sum += convert_to_double(td) ;
                   break ;
                case 7:
-                  row7sum += convert_to_double(td) ;
+                  ffi_new->cost_basis_value = convert_to_double(td) ;
+                  // row7sum += convert_to_double(td) ;
                   break ;
                   
                default:
@@ -406,7 +472,26 @@ int main(int argc, char** argv)
       }
    }
    fclose(infd);
+   
+   //  sort list by ymd
+   
+   //  then iterate over list to build desired totals
+   double row4sum = 0.0 ;
+   double row7sum = 0.0 ;
+
+   // double current_value ;
+   // double cost_basis_value ;
+   fid_fund_info_p ffi_temp ;
+   uint fcount = 0 ;
+   for (ffi_temp = ffi_top; ffi_temp != NULL; ffi_temp = ffi_temp->next) {
+      fcount++ ;
+      row4sum += ffi_temp->current_value ;
+      row7sum += ffi_temp->cost_basis_value ;
+   }
+   
+   //  output totals
    printf("max line length: %u chars\n", max_line_len);
+   printf("%u elements found\n", fcount);
    printf("Current value:    %.2f\n", row4sum);
    printf("Cost basis total: %.2f\n", row7sum);
    
