@@ -628,16 +628,52 @@ int main(int argc, char** argv)
 
    // double current_value ;
    // double cost_basis_value ;
+   uint baseline_year = 0 ;
+   double baseline_value = 1.0 ;
+   double baseline_thold = 10000.0 ;   //  if line change > thold, reset baseline
+   double current_value = 0.0 ;
+   double value_change = 0.0 ;
+   double pct_change = 0.0 ;
    fid_fund_info_p ffi_temp ;
    uint fcount = 0 ;
    puts("");
    for (ffi_temp = ffi_top; ffi_temp != NULL; ffi_temp = ffi_temp->next) {
       fcount++ ;
+      //  if new value is much larger than current value,
+      //  assume this reflects a new deposit; update current and baseline values
+      if (ffi_temp->current_value > (baseline_value + baseline_thold)) {
+         baseline_value = ffi_temp->current_value ;
+         current_value = ffi_temp->current_value ;
+         baseline_year = ffi_temp->year ;
+      }
+      else if (ffi_temp->year != baseline_year) {
+         current_value += ffi_temp->current_value ;
+         value_change = (current_value - baseline_value) ;
+         pct_change = (value_change / baseline_value) * 100.0 ;
+         printf("%04u: %.2f %.2f, %.2f, %.2f\n", baseline_year, current_value, baseline_value,
+            value_change, pct_change);
+            
+         //  update baseline values
+         current_value += ffi_temp->current_value ;
+         baseline_value = current_value ;
+         baseline_year = ffi_temp->year ;
+         
+      }
+      else {
+         current_value += ffi_temp->current_value ;
+      }
+      
+      //  calculate totals
       row4sum += ffi_temp->current_value ;
       row7sum += ffi_temp->cost_basis_value ;
       printf("%03u: %08u: %9.2f  %9.2f\n", 
          fcount, ffi_temp->ymd, ffi_temp->current_value, ffi_temp->cost_basis_value);
    }
+   //  update final calculations
+   value_change = (current_value - baseline_value) ;
+   pct_change = (value_change / baseline_value) * 100.0 ;
+   printf("%04u: %.2f %.2f, %.2f, %.2f\n", baseline_year, current_value, baseline_value,
+      value_change, pct_change);
    
    //  output totals
    printf("max line length: %u chars\n", max_line_len);
