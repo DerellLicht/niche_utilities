@@ -63,20 +63,15 @@ enum {
    PSF_END   
 } ;
 
-//lint -e1013  Symbol 'LowPart' not a member of class '_LARGE_INTEGER'
-//lint -e40    Undeclared identifier 'LowPart'
-//lint -e63    Expected an lvalue
-
 static fid_fund_info_p merge(fid_fund_info_p a, fid_fund_info_p b);
 //************************************************************
 //  the following object is a dummy point structure
-//  which is used by merge_sort.  The main code must
-//  allocate a strucure for this to point to.
+//  which is used by merge_sort.  
+//  The main code must allocate a strucure for this to point to.
 //  
-//  A global function pointer is also required by the
-//  sort routine.  This will point to a function which
-//  accepts two structure pointers as arguments, and
-//  returns:
+//  A global function pointer is also required by the sort routine.  
+//  This will point to a function which accepts two structure pointers 
+//  as arguments, and returns:
 //  
 //     >0 if a > b
 //    ==0 if a == b
@@ -99,12 +94,6 @@ static int init_sort(void)
    z->next = NULL ;
    return 0 ;
 }
-
-//****************************************************
-// void free_file_structs(void)
-//    {
-//    if (z != NULL)  delete z ;
-//    }
 
 //*********************************************************
 static int sort_ymd(fid_fund_info_p a, fid_fund_info_p b)
