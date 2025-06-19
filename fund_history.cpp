@@ -470,7 +470,7 @@ static int parse_fund_data(char *inpstr)
                *tdcl = '<' ;  //  restore TD close tag
                
                data_column++ ;
-            }  //  end !data_srch_done
+            }  //  for each <TD> element in row
             
             *trcl = '<' ;  //  restore row term after parsing data elements
             tr = trcl ;   //  slide tr ptr to next element
@@ -486,7 +486,7 @@ static int parse_fund_data(char *inpstr)
                ffi_tail->next = ffi_new ;
             }
             ffi_tail = ffi_new ;
-         }
+         }  //  for each row in table
          }  //  end local context
          break ;
          

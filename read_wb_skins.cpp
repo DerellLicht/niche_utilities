@@ -19,9 +19,9 @@
 
 typedef  unsigned int   uint ;
 
-#ifndef PATH_MAX
-#define  PATH_MAX       1024
-#endif
+#define  MAX_LINE_LEN   128
+#define  MAX_PATH_LEN   1024
+
 
 //lint -e10   Expecting '}'
 //lint -esym(40, errno)
@@ -39,9 +39,7 @@ static bool show_skin_names = false ;
 
 // Windowblinds installed-theme folder
 // C:\Users\Public\Documents\Stardock\WindowBlinds
-static char file_spec[PATH_MAX+1] = "C:\\Users\\Public\\Documents\\Stardock\\WindowBlinds\\skins.nbd" ;
-
-#define  MAX_LINE_LEN   128
+static char file_spec[MAX_PATH_LEN+1] = "C:\\Users\\Public\\Documents\\Stardock\\WindowBlinds\\skins.nbd" ;
 
 //**********************************************************************
 static void strip_newlines(char *rstr)
@@ -489,7 +487,7 @@ static int read_wb_files(void)
 }
    
 //**********************************************************************************
-// static char file_spec[PATH_MAX+1] = 
+// static char file_spec[MAX_PATH_LEN+1] = 
 //    "C:\\Users\\Public\\Documents\\Stardock\\WindowBlinds\\skins.nbd" ;
 static void get_public_documents_path(void)
 {
